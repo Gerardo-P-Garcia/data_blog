@@ -1,4 +1,4 @@
-baseurl = "https://www.example.com/"
+baseurl = "https://hungry-gates-02bbb5.netlify.app/"
 languageCode = "en-us"
 title = "Blackburn Theme Demo"
 theme = "blackburn"
