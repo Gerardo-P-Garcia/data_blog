@@ -1,0 +1,280 @@
+---
+title: "widget test"
+author: "me"
+date: 2019-07-23T21:13:14-05:00
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE)
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r helpful.functions}
+# Function to paste '%' to first observation
+
+label_percent <- function(x){
+    for(i in 1:length(x)){
+        if(i==1){
+            x[i] <- paste(x[i], "%", sep="")
+        } else{
+            x[i] <- paste(x[i])
+        }
+    }
+    return(x)
+}
+
+# Function to make bold text by pasting <b> and </b> to strings
+
+label_bold <- function(x){
+    x <- as.character(x)
+    for(i in 1:length(x)){
+        x[i] <- paste("<b>", as.character(x[i]), "</b>", sep="")
+    }
+    return(x)
+}
+```
+
+```{r constants.variables}
+# Constant variables
+
+    # Student count (district)
+    n_total <- as.numeric(514)
+    
+    # Bar plot figure dimensions
+    width_bar <- as.numeric(700+100+250)
+    height_bar <- as.numeric(500+100+250)
+```
+
+
+```{r demographics.data}
+library(tidyverse)
+library(tibble)
+library(DT)
+
+# Set up for hand-copied data from PDF
+
+demographics.df <- data.frame(
+  
+    # Name of group
+  
+    "group"=c(
+        "Male",
+        "Female",
+        "ELL",
+        "Special Ed.",
+        "Dual-Identified",
+        "504",
+        "Afr. American",
+        "Latino",
+        "White",
+        "Asian",
+        "Am. Ind/Alask. Native",
+        "Nat. Haw/Pac. Island."),
+    
+    # Student count
+    
+    "n"=c(
+        279,
+        235,
+        128,
+        94,
+        40,
+        51,
+        88,
+        115,
+        316,
+        13,
+        5,
+        2),
+    
+    # Type of data point (categorical grouping)
+    
+    "type"=c(
+        
+        # First two variables
+        "Gender",
+        "Gender",
+        
+        # Next 4
+        "Special Groups",
+        "Special Groups",
+        "Special Groups",
+        "Special Groups",
+        
+        # Last 6
+        "Race/Ethnicity",
+        "Race/Ethnicity",
+        "Race/Ethnicity",
+        "Race/Ethnicity",
+        "Race/Ethnicity",
+        "Race/Ethnicity")
+    )
+
+# Percentages for each group using n and student count.
+
+demographics.df$group_pct <- round(demographics.df$n/n_total, digits=2)
+demographics.df$group_pct <- demographics.df$group_pct*100
+
+# Print data frame 
+
+# datatable(demographics.df, options=list(pageLength=12, lengthChange=FALSE, paging=FALSE, searching=FALSE))
+```
+
+Let's see if this graph works
+```{r demographics.render}
+# Function to create figure
+
+render_demographics <- function(df){
+  
+    # Load required libraries 
+
+    # import_library('dplyr')
+    # import_library('ggplot2')
+    # import_library('plotly')
+    require(dplyr)
+    require(ggplot2)
+    require(plotly)
+  
+    # Keep observations with valid data 
+    # Note: NA values may cause issues, confirm why values are 0 instead of NA
+  
+    df <- filter(df, n>0)
+    
+    # Make group types into bold text
+    
+    df$type <- label_bold(df$type)
+    
+    # Create label format for tooltip
+    
+    tooltip_text <- paste0(
+        "<b>Group Size:</b></br></br>", df$group_pct, 
+        "%</br><b>Total Scholars</b></br>", df$n)
+  
+    # Define ggplot object
+    
+    visual <- df %>% 
+
+        # Redefine group column as factors and set order
+        # Note: includes HTML-edited type column text
+      
+        dplyr::mutate(group = factor(group, 
+            levels = c(
+                "Male",
+                "Female",
+                "ELL",
+                "Dual-Identified",
+                "Special Ed.",
+                "504",
+                "Afr. American",
+                "Latino",
+                "White",
+                "Asian",
+                "Am. Ind/Alask. Native",
+                "Nat. Haw/Pac. Island.")))%>%
+      
+        dplyr::mutate(type=factor(type, 
+            levels = c(
+                "<b>Gender</b>",
+                "<b>Special Groups</b>",
+                "<b>Race/Ethnicity</b>")))%>%
+  
+            # Draw figure using ggplot
+            # Note: geom_col == geom_bar(stat="identity", ...)
+      
+            ggplot(aes(x=factor(group, levels=rev(levels(group))), y=group_pct, 
+                label=label_percent(group_pct), text=tooltip_text))+
+                geom_col(position="dodge", color="black", aes(fill=as.factor(type)))+
+                coord_flip()+
+      
+                # Titles and labels (title deprecated by plotly)
+                # Conflict: geom_text layer with geom_bar, replaced with tooltip only
+      
+                labs(title="Scholar Demographics 2019-20", 
+                    subtitle = "Summary Statistics of Gender, Special Groups, and Race in the District", 
+                    x="", y="",
+                    caption = paste(toString(demographics.df$group[demographics.df$n==0]), 
+                    "sizes not reported."))+
+      
+                # Axis scale and labels
+                # Note: controls margin of graph for axis cut-offs with constant +5
+      
+                scale_y_continuous(expand=c(0,0), 
+                    limits = c(0, (df$group_pct%>%
+                        sort(., decreasing = TRUE)%>%
+                            .[1])+5), 
+                    labels = function(x) paste0(x, "%")) + # []
+      
+                # Themes and colors (legend location deprecated by plotly unless 'none')
+      
+                scale_fill_brewer()+
+                theme_bw()+
+                theme(legend.position = "top",
+                    legend.box="horizontal",
+                    axis.text.x = element_text(color="black", size = 11),
+                    axis.text.y = element_text(color="black", size = 11))
+    
+                # Apply ggplotly (plotly) functionality to ggplot object
+                    # Note: use of HTML text below required to create a subtitle deprecated by conversion
+                    # Note: user access to 'mode bar' completely restricted
+    
+                visual <- ggplotly(visual, tooltip="text", width=width_bar, height=height_bar)%>% 
+                    config(displayModeBar = FALSE)%>% 
+                    layout(xaxis=list(fixedrange=TRUE))%>%
+                    layout(yaxis=list(fixedrange=TRUE))%>%
+                    layout(title=list(text=paste0(
+                        '<b>Scholar Demographics</b>',
+                        '<br>',
+                        '<sup>',
+                        '<em>Summary of ',n_total,' Scholars in the District (2019-20)</em>',
+                        '</sup>')))%>%
+                    layout(annotations=list(x = 1, y = -0.1, text = 
+                        "High Needs and Econ. Disadvantaged groups not reported.", 
+                        showarrow = FALSE, xref='paper', yref='paper', 
+                        xanchor='right', yanchor='auto', xshift=0, yshift=-10,
+                        font=list(size=12, color="black")))%>%
+                    layout(legend=list(orientation="h", x=0.25, y=-0.2))%>%
+                    style(textposition="right")
+                
+    return(visual)
+}
+
+render_demographics(demographics.df)
+```
+
+And this data table...
+
+```{r, echo=FALSE}
+temp <- subset(demographics.df, select=-c(type))
+temp$group_pct <- as.character(temp$group_pct)
+for(x in 1:length(temp$group_pct)){
+    temp$group_pct[x] <- label_percent(temp$group_pct[x])
+}
+
+datatable(temp, rownames=FALSE, options=list(pageLength=12, lengthChange=FALSE, dom='t'))
+```
+
+
+And for funsies...
+
+```{r}
+library(rgl)
+library(rglwidget)
+library(htmltools)
+
+theta <- seq(0, 6*pi, len=100)
+xyz <- cbind(sin(theta), cos(theta), theta)
+lineid <- plot3d(xyz, type="l", alpha = 1:0, 
+                 lwd = 5, col = "blue")["data"]
+
+browsable(tagList(
+  rglwidget(elementId = "example", width = 500, height = 400,
+            controllers = "player"),
+  playwidget("example", 
+             ageControl(births = theta, ages = c(0, 0, 1),
+                        objids = lineid, alpha = c(0, 1, 0)),
+                        start = 1, stop = 6*pi, step = 0.1, 
+                        rate = 6,elementId = "player")
+))
+```

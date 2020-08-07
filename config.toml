@@ -2,10 +2,13 @@ baseurl = "https://hungry-gates-02bbb5.netlify.app/"
 languageCode = "en-us"
 title = "Blackburn Theme Demo"
 theme = "blackburn"
-author = "Yoshiharu Yamashita"
-copyright = "&copy; 2016. All rights reserved."
+author = "Gerardo Pelayo Garcia"
+copyright = "&copy; 2020. All rights reserved."
 canonifyurls = true
 paginate = 10
+relativeURLs = true
+
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [indexes]
   tag = "tags"
@@ -13,7 +16,7 @@ paginate = 10
 
 [params]
   # Shown in the home page
-  subtitle = "A Hugo Theme"
+  subtitle = "Another Data Blog"
   brand = "Blackburn"
   googleAnalytics = "Your Google Analytics tracking ID"
   disqus = "Your Disqus shortname"
@@ -56,3 +59,4 @@ paginate = 10
   github = "yoshiharuyamashita"
   stackoverflow = "*"
   linkedin = "*"
+
