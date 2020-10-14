@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R Markdown, Test on Blackburn Theme Demo</title>
+    <link>/tags/r-markdown-test/</link>
+    <description>Recent content in R Markdown, Test on Blackburn Theme Demo</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2020. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 13 Oct 2020 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/r-markdown-test/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Making COVID-19 interactive maps by piggybacking on John Hopkins University (Part 1)</title>
+      <link>/post/testing-static-files/</link>
+      <pubDate>Tue, 13 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/testing-static-files/</guid>
+      <description>The COVID-19 pandemic has, in many ways, cast a spotlight on the need for reliable data to track and minimize the loss of human life.Among the many datasets and reports made available in recent months,this author’s work caught my attention. While their workis thorough and, in my opinion, well-written, it’s difficult to digest due to its volume. I recently came across an example making geographicdata interactive using R and Plotly and thought: what if I combined these to make one compact visual, as opposed to severalacross multiple pages?</description>
+    </item>
+    
+  </channel>
+</rss>

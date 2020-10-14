@@ -122,7 +122,8 @@ demographics.df$group_pct <- demographics.df$group_pct*100
 # datatable(demographics.df, options=list(pageLength=12, lengthChange=FALSE, paging=FALSE, searching=FALSE))
 ```
 
-Let's see if this graph works
+Let's see if this graph works, but first we will see if we can avoid having code appearing in the intial summary of the post. A word limit is used for the start of the post, so filling in this space with text before any rendering with R occurs should fix the problem. If not, changing the word limit to a smaller value is the next step.
+
 ```{r demographics.render}
 # Function to create figure
 

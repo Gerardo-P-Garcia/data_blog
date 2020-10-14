@@ -14,32 +14,72 @@
   
   <url>
     <loc>/</loc>
-    <lastmod>2019-07-23T21:13:14-05:00</lastmod>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>/tags/plot/</loc>
-    <lastmod>2019-07-23T21:13:14-05:00</lastmod>
+    <loc>/topics/covid-19/</loc>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testing-static-files/</loc>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/topics/interactive-maps/</loc>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/topics/interactive-visuals/</loc>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>/post/</loc>
-    <lastmod>2019-07-23T21:13:14-05:00</lastmod>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>/tags/r-markdown/</loc>
-    <lastmod>2019-07-23T21:13:14-05:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/tags/regression/</loc>
-    <lastmod>2019-07-23T21:13:14-05:00</lastmod>
+    <loc>/tags/r-markdown-kaggle-plotly-john-hopkins-university/</loc>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>/tags/</loc>
-    <lastmod>2019-07-23T21:13:14-05:00</lastmod>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/topics/</loc>
+    <lastmod>2020-10-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/2020-08-11-r-rmarkdown/</loc>
+    <lastmod>2020-08-11T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tags/plot/</loc>
+    <lastmod>2020-08-11T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tags/r-markdown/</loc>
+    <lastmod>2020-08-11T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tags/regression/</loc>
+    <lastmod>2020-08-11T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testing-static-files/</loc>
+    <lastmod>2020-08-12T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -110,10 +150,6 @@
   <url>
     <loc>/tags/themes/</loc>
     <lastmod>2014-04-02T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/topics/</loc>
   </url>
   
 </urlset>

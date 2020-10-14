@@ -1,0 +1,532 @@
+---
+title: Interactive COVID-19 maps by piggybacking (Part 1)
+author: me
+date: '2020-10-13'
+slug: testing-static-files
+categories:
+  - Development
+tags:
+  - R Markdown, Kaggle, Plotly, John Hopkins University
+description: ''
+topics: [interactive visuals, interactive maps, COVID-19]
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(comment = NA, message = FALSE, warning = FALSE)
+```
+
+The COVID-19 pandemic cast a spotlight on the need for reliable data and responsible analysis to track and minimize the loss of human life. 
+Among the many datasets and reports made available in recent months, 
+[this author's work caught my attention](https://www.kaggle.com/gerardopgarcia/coronavirus-covid-19-visualization-prediction/){target="_blank"}, compiling large amounts of data into one report that was easy to maintain. While their work
+is thorough and, in my opinion, well-written, it's difficult to digest due to its volume. I also recently came across [an example using geographic
+data to make interactive maps using R and Plotly (Javascript)](https://plotly.com/r/sliders/){target="_blank"} 
+and thought: what if I combined these to make a single visual that condensed pages of information?
+
+The data are provided by John Hopkins University and updated frequently (if not daily), 
+[available to the public via Github](https://github.com/CSSEGISandData/COVID-19){target="_blank"}. Their data dashboard 
+[can be found here](https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6){target="_blank"}. While the dashboard already provides multiple 
+visuals, this small project allows us to choose and download different 3-D map projections of the 
+Earth (or U.S.), as well as change the map's focus by either clicking and dragging manually or using sliders to adjust the geographic coordinates at the center.
+
+The data are available as CSV files through their respective hyperlinks, and, once downloaded, I changed all the column names to lowercase for reference. The majority are time-series data that include coordinates of multiple COVID-19 measures for countries 
+and sub-regions globally or specific to the U.S. The use of hyperlinks also ensure that the most up-to-date is always used. 
+For now, I focus on the latest <em>confirmed</em> COVID-19 cases only for simplicity.
+
+<details><summary><em>Click here to show code.</em></summary>
+
+```{r}
+# Gather data from URLs in CSV format
+
+confirmed_df <- read.csv(
+  'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv')
+
+deaths_df <- read.csv(
+  'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv')
+
+recoveries_df <- read.csv(
+  'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv')
+
+latest_data <- read.csv(
+  'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/10-11-2020.csv')
+
+us_medical_data <- read.csv(
+  'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports_us/10-11-2020.csv')
+
+apple_mobility <- read.csv(
+  'https://covid19-static.cdn-apple.com/covid19-mobility-data/2018HotfixDev24/v3/en-us/applemobilitytrends-2020-10-11.csv')
+
+# Change columns to lower case
+
+names(latest_data) <- tolower(names(latest_data))
+
+names(confirmed_df) <- tolower(names(confirmed_df))
+
+names(us_medical_data) <- tolower(names(us_medical_data))
+
+names(deaths_df) <- tolower(names(deaths_df))
+
+names(recoveries_df) <- tolower(names(recoveries_df))
+
+names(apple_mobility) <- tolower(names(apple_mobility))
+```
+
+</details>
+
+<hr>
+
+<b>Latest data from John Hopkins University (<em>requested `r Sys.Date()`</em>):</b>
+
+<div style="overflow-x:scroll;">
+
+```{r echo=FALSE}
+DT::datatable(latest_data,
+  filter='top',
+  extensions = 'Buttons',
+  options = list(dom = 'Bfrtip',
+  buttons = c('copy', 'csv', 'excel', 'pdf'),
+  pageLength=10,
+  lengthMenu = list(c(10,25,50,-1),
+  c(10,25,50,"All"))),
+  rownames = FALSE)
+```
+
+</div>
+
+I then turned to the Plotly example I found online, which rendered a 3-D globe and drop-down menu of numerous map projects to choose from.
+The data and code used to draw the lines were identified and eventually removed altogether, leaving what is essentially an empty 
+container to use as a template.
+
+<hr>
+
+<b>Original example of interactive maps from Plotly:</b>
+
+<details><summary><em>Click here to show code.</em></summary>
+
+```{r}
+library(plotly)
+
+df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/globe_contours.csv')
+df$id <- seq_len(nrow(df))
+
+library(tidyr)
+d <- df %>%
+  gather(key, value, -id) %>%
+  separate(key, c("l", "line"), "\\.") %>%
+  spread(l, value)
+
+geo <- list(
+  showland = TRUE,
+  showlakes = TRUE,
+  showcountries = TRUE,
+  showocean = TRUE,
+  countrywidth = 0.5,
+  landcolor = 'rgb(230, 145, 56)',
+  lakecolor = 'rgb(0, 255, 255)',
+  oceancolor = 'rgb(0, 255, 255)',
+  projection = list(
+    type = 'orthographic',
+    rotation = list(
+      lon = -100,
+      lat = 40,
+      roll = 0
+    )
+  ),
+  lonaxis = list(
+    showgrid = TRUE,
+    gridcolor = toRGB("gray40"),
+    gridwidth = 0.5
+  ),
+  lataxis = list(
+    showgrid = TRUE,
+    gridcolor = toRGB("gray40"),
+    gridwidth = 0.5
+  )
+)
+
+## add custom events
+
+# dropdown
+projections = data.frame(type = c(
+  "equirectangular", "mercator", "orthographic", "natural earth","kavrayskiy7", 
+  "miller", "robinson", "eckert4", "azimuthal equal area","azimuthal equidistant", 
+  "conic equal area", "conic conformal", "conic equidistant", "gnomonic", "stereographic", 
+  "mollweide", "hammer", "transverse mercator", "albers usa", "winkel tripel"))
+
+all_buttons <- list()
+for (i in 1:length(projections[,])) { 
+  all_buttons[[i]] <- list(method = "relayout",
+  args = list(list(geo.projection.type = projections$type[i])),
+  label = projections$type[i])
+}
+
+# sliders
+lon_range = data.frame(seq(-180, 180, 10))
+lat_range = data.frame(seq(-90, 90, 10))
+colnames(lon_range) <- "x"
+colnames(lat_range) <- "x"
+
+all_lat <- list()
+for (i in 1:length(lat_range[,])) { 
+  all_lat[[i]] <- list(method = "relayout",
+                       args = list(list(geo.projection.rotation.lat = lat_range$x[i])),
+                       label = lat_range$x[i])
+}
+
+all_lon <- list()
+for (i in 1:length(lon_range[,])) {  
+  all_lon[[i]] <- list(method = "relayout", 
+  args = list(list(geo.projection.rotation.lon = lon_range$x[i])),
+  label = lon_range$x[i]) 
+} 
+
+# annotations
+annot <- list(x = 0, y=0.8, text = "Projection", yanchor = 'bottom', 
+  xref = 'paper', xanchor = 'right',
+  showarrow = FALSE)
+
+
+# original d3-globe with contours
+fig<- plot_geo(d) 
+fig <- fig %>% group_by(line) 
+fig <- fig %>% add_lines(x = ~lon, y = ~lat, color = ~line, colors = 'Reds') 
+fig <- fig %>% layout(
+  showlegend = FALSE, geo = geo
+)
+
+# plot with custom events
+fig<- fig
+fig <- fig %>% layout(annotations = annot,
+  updatemenus = list(list(active = 2, x = 0, y = 0.8, 
+    buttons=all_buttons)),
+  sliders = list(
+    list(
+      active = (length(lon_range[,])-1)/2, 
+      currentvalue = list(prefix = "Longitude: "), 
+      pad = list(t = 20), 
+      steps = all_lon),
+    list(
+      active = (length(lat_range[,])-1)/2, 
+      currentvalue = list(prefix = "Latitude: "), 
+      pad = list(t = 100), 
+      steps = all_lat)))
+```
+
+</details>
+
+```{r echo=FALSE}
+fig
+```
+
+<hr>
+
+<b>Empty 'container' remaining after removing irrelevant code:</b>
+
+<details><summary><em>Click here to show code.</em></summary>
+
+```{r}
+library(plotly)
+
+# REMOVED
+# ------------------------------------------------------------------------------
+# df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/globe_contours.csv')
+# df$id <- seq_len(nrow(df))
+# 
+# library(tidyr)
+# d <- df %>%
+#   gather(key, value, -id) %>%
+#   separate(key, c("l", "line"), "\\.") %>%
+#   spread(l, value)
+# ------------------------------------------------------------------------------
+
+geo <- list(
+  showland = TRUE,
+  showlakes = TRUE,
+  showcountries = TRUE,
+  showocean = TRUE,
+  countrywidth = 0.5,
+  landcolor = 'rgb(230, 145, 56)',
+  lakecolor = 'rgb(0, 255, 255)',
+  oceancolor = 'rgb(0, 255, 255)',
+  projection = list(
+    type = 'orthographic',
+    rotation = list(
+      lon = -100,
+      lat = 40,
+      roll = 0
+    )
+  ),
+  lonaxis = list(
+    showgrid = TRUE,
+    gridcolor = toRGB("gray40"),
+    gridwidth = 0.5
+  ),
+  lataxis = list(
+    showgrid = TRUE,
+    gridcolor = toRGB("gray40"),
+    gridwidth = 0.5
+  )
+)
+
+## add custom events
+
+# dropdown
+projections = data.frame(type = c(
+  "equirectangular", "mercator", "orthographic", "natural earth","kavrayskiy7", 
+  "miller", "robinson", "eckert4", "azimuthal equal area","azimuthal equidistant", 
+  "conic equal area", "conic conformal", "conic equidistant", "gnomonic", "stereographic", 
+  "mollweide", "hammer", "transverse mercator", "albers usa", "winkel tripel"))
+
+all_buttons <- list()
+for (i in 1:length(projections[,])) { 
+  all_buttons[[i]] <- list(method = "relayout",
+  args = list(list(geo.projection.type = projections$type[i])),
+  label = projections$type[i])
+}
+
+# sliders
+lon_range = data.frame(seq(-180, 180, 10))
+lat_range = data.frame(seq(-90, 90, 10))
+colnames(lon_range) <- "x"
+colnames(lat_range) <- "x"
+
+all_lat <- list()
+for (i in 1:length(lat_range[,])) { 
+  all_lat[[i]] <- list(method = "relayout",
+  args = list(list(geo.projection.rotation.lat = lat_range$x[i])),
+  label = lat_range$x[i])
+}
+
+all_lon <- list()
+for (i in 1:length(lon_range[,])) {  
+  all_lon[[i]] <- list(method = "relayout", 
+  args = list(list(geo.projection.rotation.lon = lon_range$x[i])),
+  label = lon_range$x[i]) 
+} 
+
+# annotations
+annot <- list(x = 0, y=0.8, text = "Projection", yanchor = 'bottom', 
+  xref = 'paper', xanchor = 'right',
+  showarrow = FALSE)
+
+# REMOVED
+# ------------------------------------------------------------------------------
+# original d3-globe with contours
+# fig<- plot_geo(d) 
+# fig <- fig %>% group_by(line) 
+# fig <- fig %>% add_lines(x = ~lon, y = ~lat, color = ~line, colors = 'Reds') 
+# fig <- fig %>% layout(
+#   showlegend = FALSE, geo = geo
+# )
+# ------------------------------------------------------------------------------
+
+# REPLACED
+# ------------------------------------------------------------------------------
+fig <- plot_geo()
+fig <- fig %>% layout(
+  showlegend=FALSE, geo=geo
+)
+# ------------------------------------------------------------------------------
+
+# plot with custom events
+fig<- fig
+fig <- fig %>% layout(annotations = annot,
+  updatemenus = list(list(active = 2, x = 0, y = 0.8, 
+    buttons=all_buttons)),
+  sliders = list(
+    list(
+      active = (length(lon_range[,])-1)/2, 
+      currentvalue = list(prefix = "Longitude: "), 
+      pad = list(t = 20), 
+      steps = all_lon),
+    list(
+      active = (length(lat_range[,])-1)/2, 
+      currentvalue = list(prefix = "Latitude: "), 
+      pad = list(t = 100), 
+      steps = all_lat)))
+```
+
+</details>
+
+```{r echo=FALSE}
+fig
+```
+
+With the visual essentially an empty container, I reshaped the latest COVID-19 data to fit the strucutre of the original dataset. 
+First, I split up the data into 2 groups: those with and without confirmed case counts reported for geographic areas smaller than the country itself. 
+Countries that only reported a single statistic for their national as whole were grouped under the color of reds and the others in blues. To create more variation in 
+the markers on the map, I sorted the data into decreasing order and assigned them a color by their global rank.
+
+<details><summary><em>Click here to show code.</em></summary>
+
+```{r}
+# Restructure latest COVID-19 data for plot_geo visual
+
+# Country-only confirmed case reports
+
+latest_data_countries <- latest_data[latest_data$province_state=="",]
+
+latest_data_countries$rank[order(latest_data_countries$confirmed, decreasing = FALSE)] <- 1:nrow(latest_data_countries)
+
+# All other confirmed case reports
+
+latest_data_sub <- latest_data[!latest_data$province_state=="",]
+
+latest_data_sub$rank[order(latest_data_sub$confirmed, decreasing = FALSE)] <- 1:nrow(latest_data_sub)
+```
+
+</details>
+
+And replaced the data into the now empty container. I also included a few options restricting user options to interact with the visual, preventing 
+awkward results that could obscure parts of the map until it was reloaded. I included the option to download the current map as a PNG file while removing the Plotly logo 
+for stylistic reasons.
+
+<hr>
+
+<b>Final result after merging the new data and empty container:</b>
+
+<details><summary><em>Click here to show code.</em></summary>
+
+```{r}
+library(plotly)
+
+library(tidyr)
+
+geo <- list(
+  showland = TRUE,
+  showlakes = TRUE,
+  showcountries = TRUE,
+  showocean = TRUE,
+  countrywidth = 0.5,
+  landcolor = 'rgb(230, 145, 56)',
+  lakecolor = 'rgb(0, 255, 255)',
+  oceancolor = 'rgb(0, 255, 255)',
+  projection = list(
+    type = 'orthographic',
+    rotation = list(
+      lon = -100,
+      lat = 40,
+      roll = 0
+    )
+  ),
+  lonaxis = list(
+    showgrid = TRUE,
+    gridcolor = toRGB("gray40"),
+    gridwidth = 0.5
+  ),
+  lataxis = list(
+    showgrid = TRUE,
+    gridcolor = toRGB("gray40"),
+    gridwidth = 0.5
+  )
+)
+
+## add custom events
+
+# dropdown
+projections = data.frame(type = c("equirectangular", "mercator", "orthographic", "natural earth","kavrayskiy7", 
+  "miller", "robinson", "eckert4", "azimuthal equal area","azimuthal equidistant", 
+  "conic equal area", "conic conformal", "conic equidistant", "gnomonic", "stereographic", 
+  "mollweide", "hammer", "transverse mercator", "albers usa", "winkel tripel"))
+
+all_buttons <- list()
+for (i in 1:length(projections[,])) { 
+  all_buttons[[i]] <- list(method = "relayout",
+  args = list(list(geo.projection.type = projections$type[i])),
+  label = projections$type[i])
+}
+
+# sliders
+lon_range = data.frame(seq(-180, 180, 10))
+lat_range = data.frame(seq(-90, 90, 10))
+colnames(lon_range) <- "x"
+colnames(lat_range) <- "x"
+
+all_lat <- list()
+for (i in 1:length(lat_range[,])) { 
+  all_lat[[i]] <- list(method = "relayout",
+  args = list(list(geo.projection.rotation.lat = lat_range$x[i])),
+  label = lat_range$x[i])
+}
+
+all_lon <- list()
+for (i in 1:length(lon_range[,])) {  
+  all_lon[[i]] <- list(method = "relayout", 
+  args = list(list(geo.projection.rotation.lon = lon_range$x[i])),
+  label = lon_range$x[i]) 
+} 
+
+# annotations
+
+annot <- list(x = 0, y=0.8, text = "Projection", yanchor = 'bottom', 
+  xref = 'paper', xanchor = 'right',
+  showarrow = FALSE)
+
+# NEW DATA WAS PLACED HERE
+# ------------------------------------------------------------------------------
+# COVID-19 data
+
+fig <- plot_geo()
+
+# Add data reported within countries
+
+fig <- fig %>% add_markers(x=~latest_data_sub$long_, y=~latest_data_sub$lat, 
+  color=~latest_data_sub$rank, colors = "Blues",
+  hovertemplate=~paste("<b><br>",latest_data_sub$country_region, "<br>", 
+    latest_data_sub$province_state, "<br>", 
+    latest_data_sub$admin2, "<br>", latest_data_sub$confirmed, "</b><extra></extra>"))
+
+# Add data from cases reported for countries in aggregate
+
+fig <- fig %>% add_markers(x=~latest_data_countries$long_, y=~latest_data_countries$lat, 
+  color=~latest_data_countries$rank, colors = "Reds",
+  hovertemplate=~paste("<b><br>",latest_data_countries$country_region, "<br>", 
+    latest_data_countries$confirmed, "</b><extra></extra>"))
+
+# Hide elements of the visual, including legends and gradients
+
+fig <- fig %>% layout(
+  showlegend = FALSE, geo = geo
+)%>%hide_colorbar() 
+# ------------------------------------------------------------------------------
+
+# plot with custom events
+
+fig<- fig
+fig <- fig %>% layout(annotations = annot,
+  updatemenus = list(list(active = 2, x = 0, y = 0.8, 
+  buttons=all_buttons)),
+  sliders = list(
+    list(
+      active = (length(lon_range[,])-1)/2, 
+      currentvalue = list(prefix = "Longitude: "), 
+      pad = list(t = 20), 
+      steps = all_lon),
+    list(
+      active = (length(lat_range[,])-1)/2, 
+      currentvalue = list(prefix = "Latitude: "), 
+      pad = list(t = 100), 
+      steps = all_lat)))
+
+# Adjust Plotly options
+
+fig <- fig %>%
+  config(displaylogo = FALSE)%>%
+  config(modeBarButtonsToRemove = c(
+    "zoomIn2d", "zoomOut2d", "sendDataToCloud", "editInChartStudio", "zoom2d", 
+    "pan2d", "select2d", "lasso2d", "drawclosedpath", "drawopenpath", "drawline", 
+    "drawrect", "drawcircle", "eraseshape", "autoScale2d", "resetScale2d", 
+    "hoverCloestCartesian", "hoverCompareCartesian", "handleCartesian", 
+    "toggleSpikelines"))
+```
+
+</details>
+
+```{r echo=FALSE}
+fig
+```
+
+These steps can be repeated to create maps of active cases, deaths, and recoveries with minimal effort. 
+Afterwards, the next step will likely involve pulling time-series data that allow these maps to model change over 
+time through a <em>play</em> button, as well as developing a dashboard to house the visuals themselves.
+
+

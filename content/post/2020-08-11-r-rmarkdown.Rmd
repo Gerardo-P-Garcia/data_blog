@@ -1,0 +1,295 @@
+---
+title: "Gun Violence"
+author: "me"
+date: 2020-08-11T21:13:14-05:00
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+---
+
+Following the outbreak of COVID-19, the Black Lives Matter movement brought attention to police violence against the Black community and the people overall, with protests spanning the globe bringing additional scrutiny and evidence against long-established practices. A wealth of information has followed, including self-recorded videos and data, allowing us to connect systemic-level violence with the intensity of individual shootings that some may have dismissed as anecdotal. The police fatal-shooting data are from [Ahsen Nazir's data set uploaded to Kaggle, downloaded on 8/06/2020](https://www.kaggle.com/ahsen1330/us-police-shootings). The unedited data are accessible in full below, and are offered for transparency and access.
+
+To test static files, try [test](/html/state_reporting.html).
+
+
+<details><summary>Click to see set up code</summary>
+<p>
+```{r setup}
+knitr::opts_chunk$set(collapse = TRUE)
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+# Check and install required libraries.
+list.of.packages <- c(
+    "dplyr", "ggplot2", "tidyverse", "ggpubr","plotly", "DT")
+new.packages <- list.of.packages[!(list.of.packages %in%
+    installed.packages()[,"Package"])]
+
+# Remove checked vectors from memory.
+if(length(new.packages)) install.packages(new.packages)
+rm(list.of.packages, new.packages)
+```
+</p>
+</details>
+
+<details><summary>Click to see custom functions code</summary>
+<p>
+```{r}
+# Functions for Visualizations
+
+# Paste percent symbol
+label_percent <- function(x){
+  x <- as.character(x)
+  for(i in 1:length(x)){
+    if(i==1){
+      x[i] <- paste(as.numeric(x[i])*100, "%", sep="")
+    } else{ 
+      x[i] <- paste(as.numeric(x[i])*100, "%", sep="")
+    }
+  }
+  return(x)
+}
+
+label_bold <- function(x){
+  x <- as.character(x)
+  for(i in 1:length(x)){
+    if(i==1){
+      x[i] <- paste("<b>", x[i], "</b>", sep="")
+    } else{ 
+      x[i] <- paste("<b>", x[i], "</b>", sep="")
+    }
+  }
+  return(x)
+}
+
+# Tables
+create_dt <- function(x){
+  require(DT)
+  DT::datatable(x,
+    extensions = 'Buttons',
+    options = list(dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel'),
+      pageLength=10,
+      scrollX=TRUE,
+      lengthMenu = list(c(10,25,50,-1),
+        c(10,25,50,"All"))),
+    rownames = FALSE)
+}
+
+# Donut charts
+render_donut <- function(df, title_, pct=FALSE){
+  require(dplyr)
+  require(ggplot2)
+  require(plotly)
+  require(scales)
+  library(stats)
+
+  df <- data.frame(table(df$group))
+  df <- df[order(df$Freq, decreasing=T),]
+  df <- rename(df, group=Var1, value=Freq)
+  row.names(df) <- NULL
+    
+  
+  # Data expect 'group' and 'value' columns...
+  
+  # tooltip_text <- paste0(
+  #   "<b>", df$group, ": </b>", df$value)
+  #   if(pct){
+  #     tooltip_text <- paste0(
+  #       "<b>", df$group, ": </b>", label_percent(df$value))
+  #   }
+  
+  # Define plotly object
+ # df <- df %>% group_by(group)
+ # df <- df %>% summarize(count = n())
+  fig <- df %>% plot_ly(labels = ~group, values = ~value, textinfo= ~value)
+  fig <- fig %>% add_pie(hole = 0.6)
+  fig <- fig %>% layout(title = paste("<b>", title_, "</b>", sep=""),  showlegend = T,
+  xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+  yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))%>%
+  config(displaylogo = FALSE)%>%
+  config(modeBarButtonsToRemove = c(
+  "zoomIn2d", "zoomOut2d", "sendDataToCloud", "editInChartStudio", "zoom2d", 
+  "pan2d", "select2d", "lasso2d", "drawclosedpath", "drawopenpath", "drawline", 
+  "drawrect", "drawcircle", "eraseshape", "autoScale2d", "resetScale2d", 
+  "hoverCloestCartesian", "hoverCompareCartesian", "handleCartesian", 
+  "toggleSpikelines"))%>%
+  layout(autosize=F, margin=list(t=75, pad=0), #width=400, height=400,
+    legend=list(orientation='v', x=1.2, y=0.5, face='bold', font=list(size=15)))
+
+    return(fig)
+}
+
+# Create visuals
+render_visual <- function(df, title_, pct=FALSE){
+  require(dplyr)
+  require(ggplot2)
+  require(plotly)
+  require(scales)
+  require(stats)
+  
+  # # Global constants
+  #   #fig_width <- as.numeric(825)
+  # #  fig_height <- as.numeric(525)
+  #   
+  #   # Fix dataframe (top 8)
+  #   df <- rename(df, group=response)
+  #   
+  #   if(nrow(df)>8){
+  #       temp <- df[1:8,]
+  #       
+  #       if(df$value[8]==df$value[9] & df$value[8]!=1){
+  #             boundary <- df$value[8] + 1
+  #             temp <- df[df$value > boundary,]
+  #       }
+  #       df <- temp
+  #   }
+  
+  # Define ggplot object
+  tooltip_text <- paste0(
+    "<b>", df$group, ": </b>", label_percent(df$value), "</br></br><b>Total: </b>", df$n)
+    
+ 
+  visual <- df %>% 
+    dplyr::mutate(group=factor(label_bold(as.character(group)),
+      levels=unique(label_bold(group))))%>%
+    ggplot(aes(x=factor(group, levels=rev(levels(group))), y=value, text=tooltip_text))+
+      geom_col(position="dodge", color="black", aes(fill=type), alpha=1)+
+      coord_flip()+
+      labs(title=title_, 
+        subtitle = "", 
+          x="", y="", fill="")+
+      #scale_y_continuous(expand=c(0,0), limits = (0, 100), labels = scales::percent(x=value))+
+    scale_y_continuous(expand=c(0,0), labels = percent, limits=c(0,1))+
+ #   limits=c(0, 100)+
+          #                  
+          #                  number_format(accuracy = 1),
+          #  # breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
+          # limits = c(0, (df$value%>%
+          # sort(., decreasing = TRUE)%>%
+          #   100))) +
+          scale_fill_brewer(direction = -1)+
+          theme_bw()+
+          theme(legend.position = "bottom",
+            legend.box="horizontal",
+            axis.text.x = element_text(color="black", size = 11),
+            axis.text.y = element_text(color="black", size = 11))
+                
+    visual <- ggplotly(visual, tooltip="text")%>% 
+      layout(xaxis=list(fixedrange=TRUE))%>%
+      layout(yaxis=list(fixedrange=TRUE))%>%
+      layout(title=list(text=paste0(
+        '<b>', title_,'</b>')))%>%
+        layout(annotations=list(x = 1, y = -0.1, text = "", 
+        showarrow = FALSE, xref='paper', yref='paper', 
+        xanchor='right', yanchor='auto', xshift=0, yshift=-10,
+        font=list(size=12, color="black")))%>%
+      layout(legend=list(orientation="h", x=0.25, y=-0.2))%>%
+      config(displaylogo = FALSE)%>%
+      config(modeBarButtonsToRemove = c(
+        "zoomIn2d", "zoomOut2d", "sendDataToCloud", "editInChartStudio", "zoom2d", 
+        "pan2d", "select2d", "lasso2d", "drawclosedpath", "drawopenpath", "drawline", 
+        "drawrect", "drawcircle", "eraseshape", "autoScale2d", "resetScale2d", 
+        "hoverCloestCartesian", "hoverCompareCartesian", "handleCartesian", 
+        "toggleSpikelines"))%>%
+      layout(margin=0,0,0,0)%>%
+      style(textposition="right")
+      
+  return(visual)}
+```
+
+</p>
+</details>
+```{r}
+# Import data
+df <- read.csv(
+  "C:/Users/Shadow/Documents/Data/Projects/Kaggle/shootings_2020_08_06.csv")
+
+create_dt(df)
+```
+
+From the data, we see that men accounted for over 95% of reported fatalities between 2015 and 2020.
+
+```{r}
+library(dplyr)
+
+temp <- subset(df, select=c(gender))
+temp <- rename(temp, group=gender)
+
+render_donut(temp, 'Fatal Police Shootings by Gender')
+rm(temp)
+```
+
+
+Just over 50% of victims were white, [despite accounting for 75% of the US population](https://www.census.gov/quickfacts/fact/table/US/PST045219). Meanwhile, 27% of victims were Black (13% of the population) and 18% were Hispanic (19%).
+
+```{r}
+library(dplyr)
+
+temp <- subset(df, select=c(race))
+temp <- rename(temp, group=race)
+
+render_donut(temp, 'Fatal Police Shootings by Race')
+rm(temp)
+```
+
+Using the 2019 US Census to *estimate* the population sizes for each race in the last 5 years, we can begin to understand the racial disparities despite the number of white victims. This assumes racial demographics have remained constant for the last 5 years in the US.
+
+```{r}
+library(dplyr)
+
+temp <- subset(df, select=c(race))
+temp <- rename(temp, group=race)
+
+# Turn counts into percentages 
+temp <- data.frame(table(temp))
+temp <- rename(temp, group=temp, value=Freq)
+temp$value <- round(temp$value/sum(temp$value), digits=2)
+temp <- temp[order(temp$value, decreasing=T),]
+
+# Enter census data (link provided)
+group <- c('White', 'Black', 'Hispanic', 'Asian', 'Native', 'Other')
+
+# Race-size percentages in 2019
+value <- c(
+  0.763,
+  0.134,
+  0.185,
+  0.059,
+  0.002,
+  0.028)
+
+# Total US population in 2019
+total <- 328239523
+
+n <- c(
+  round(0.763*total, digits=0),
+  round(0.134*total, digits=0),
+  round(0.185*total, digits=0),
+  round(0.059*total, digits=0),
+  round(0.002*total, digits=0),
+  round(0.028*total, digits=0)
+)
+
+# Total population subset
+temp1 <- data.frame(cbind(group, value, n))
+temp1$type <- 'Total Population'
+
+# Race subset
+temp$n <- round(temp$value*nrow(df), digits=0)
+temp$type <- 'Killed by Police'
+
+# Merge & create figure
+temp <- rbind(temp, temp1)
+temp$value <- as.numeric(temp$value)
+render_visual(temp, 
+  'Fatalities vs. Race Size from 2015 to 2020\n(Estimated with 2019 US Census)')
+rm(temp)
+rm(temp1)
+rm(group)
+rm(n)
+rm(value)
+rm(total)
+```
+
+

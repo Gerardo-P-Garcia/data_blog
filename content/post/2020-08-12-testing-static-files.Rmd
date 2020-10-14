@@ -1,0 +1,17 @@
+---
+title: Testing Static Files
+author: me
+date: '2020-08-12'
+slug: testing-static-files
+categories:
+  - Development
+tags:
+  - R Markdown
+description: ''
+topics: []
+---
+
+
+
+![](/html/state_reporting.html){width=100% height=1000px}
+
