@@ -457,7 +457,8 @@ for (i in 1:length(lon_range[,])) {
 
 # annotations
 
-annot <- list(x = 0, y=0.8, text = "Projection", yanchor = 'bottom', 
+annot <- list(x = 0, y=0.8, text = "<b>Confirmed Cases</b><br><br><br>Projection",
+  yanchor = 'bottom', 
   xref = 'paper', xanchor = 'right',
   showarrow = FALSE)
 
@@ -517,6 +518,12 @@ fig <- fig %>%
     "drawrect", "drawcircle", "eraseshape", "autoScale2d", "resetScale2d", 
     "hoverCloestCartesian", "hoverCompareCartesian", "handleCartesian", 
     "toggleSpikelines"))
+
+# Add title - Not included for now because it cuts off along the top
+# Included under the legend annotation for better use of space
+
+# fig <- fig %>%
+#  layout(title=list(text='<b>Confirmed COVID-19 Cases</b>'))
 ```
 
 </details>
@@ -525,8 +532,6 @@ fig <- fig %>%
 fig
 ```
 
-These steps can be repeated to create maps of active cases, deaths, and recoveries with minimal effort. 
-Afterwards, the next step will likely involve pulling time-series data that allow these maps to model change over 
-time through a <em>play</em> button, as well as developing a dashboard to house the visuals themselves.
-
-
+These steps can be repeated to create interactive maps of active cases, deaths, and recoveries with the available datat. 
+The next step will be pulling time-series data and map changes over time. There are tools available through HTML widgets that 
+can facilitate this by adding a <em>play</em> button to the map.
